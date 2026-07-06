@@ -21,7 +21,7 @@ func main() {
 
 	log.Println("database ready at", dbPath)
 
-	mux := http.NewServerMux()
+	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("forum server is running"))
