@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head><title>{{.Post.Title}}</title></head>
+<body>
+  <nav>
+    <a href="/">Home</a> —
+    {{if .User}}
+      Logged in as {{.User.Username}}
+    {{else}}
+      <a href="/login">Login</a> | <a href="/register">Register</a>
+    {{end}}
+  </nav>
+  <hr>
+  <article>
+    <h1>{{.Post.Title}}</h1>
+    <p>by {{.Post.Username}} on {{.Post.CreatedAt.Format "Jan 2, 2006 15:04"}}</p>
+    <p>
+      {{range .Post.Categories}}<span>[{{.Name}}]</span> {{end}}
+    </p>
+    <p>{{.Post.Content}}</p>
+  </article>
+  <hr>
+  <p><em>Comments coming in Phase 4.</em></p>
+</body>
+</html>
