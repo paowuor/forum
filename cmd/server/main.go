@@ -28,17 +28,22 @@ func main() {
 
 	userRepo := repository.NewUserRepository(db)
 	sessionRepo := repository.NewSessionRepository(db)
+	categoryRepo := repository.NewCategoryRepository(db)
+	postRepo := repository.NewPostRepository(db)
+
+	if err := categoryRepo.SeedDefaults(); err != nil {
+		log.Fatalf("failed to seed categories: %v", err)
+	}
+
 	authHandler := handlers.NewAuthHandler(userRepo, sessionRepo)
+	postHandler := handlers.NewPostHandler(postRepo, categoryRepo, templates)
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		if user := handlers.UserFromContext(r); user != nil {
-			w.Write([]byte("forum server is running — logged in as " + user.Username))
-			return
-		}
-		w.Write([]byte("forum server is running — not logged in"))
-	})
+	mux.HandleFunc("GET /", postHandler.List)
+	mux.HandleFunc("GET /posts/new", handlers.RequireAuth(postHandler.NewPostForm))
+	mux.HandleFunc("POST /posts", handlers.RequireAuth(postHandler.Create))
+	mux.HandleFunc("GET /posts/{id}", postHandler.View)
 
 	mux.HandleFunc("GET /register", func(w http.ResponseWriter, r *http.Request) {
 		templates.ExecuteTemplate(w, "register.html", nil)
