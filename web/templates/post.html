@@ -18,6 +18,19 @@
       {{range .Post.Categories}}<span>[{{.Name}}]</span> {{end}}
     </p>
     <p>{{.Post.Content}}</p>
+    <p>
+      👍 {{.Post.LikeCount}} &nbsp; 👎 {{.Post.DislikeCount}}
+      {{if $.User}}
+        <form method="POST" action="/posts/{{.Post.ID}}/react" style="display:inline">
+          <input type="hidden" name="value" value="1">
+          <button type="submit">{{if eq .Post.UserReaction 1}}Liked ✓{{else}}Like{{end}}</button>
+        </form>
+        <form method="POST" action="/posts/{{.Post.ID}}/react" style="display:inline">
+          <input type="hidden" name="value" value="-1">
+          <button type="submit">{{if eq .Post.UserReaction -1}}Disliked ✓{{else}}Dislike{{end}}</button>
+        </form>
+      {{end}}
+    </p>
   </article>
   <hr>
   <h2>Comments</h2>
@@ -28,6 +41,19 @@
     <div>
       <p><strong>{{.Username}}</strong> — {{.CreatedAt.Format "Jan 2, 2006 15:04"}}</p>
       <p>{{.Content}}</p>
+      <p>
+        👍 {{.LikeCount}} &nbsp; 👎 {{.DislikeCount}}
+        {{if $.User}}
+          <form method="POST" action="/comments/{{.ID}}/react" style="display:inline">
+            <input type="hidden" name="value" value="1">
+            <button type="submit">{{if eq .UserReaction 1}}Liked ✓{{else}}Like{{end}}</button>
+          </form>
+          <form method="POST" action="/comments/{{.ID}}/react" style="display:inline">
+            <input type="hidden" name="value" value="-1">
+            <button type="submit">{{if eq .UserReaction -1}}Disliked ✓{{else}}Dislike{{end}}</button>
+          </form>
+        {{end}}
+      </p>
     </div>
     <hr>
   {{end}}
