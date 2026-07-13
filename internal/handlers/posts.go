@@ -83,29 +83,79 @@ func (h *PostHandler) attachCommentReactions(comments []models.Comment, userID i
 }
 
 // List handles GET / — shows every post to everyone, registered or not.
+// Supports optional filtering via query params:
+//   ?category=<id>   — posts tagged with a category (everyone)
+//   ?filter=mine      — posts created by the logged-in user (requires login)
+//   ?filter=liked      — posts liked by the logged-in user (requires login)
 func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
-	posts, err := h.posts.GetAll()
-	if err != nil {
-		utils.RespondError(w, http.StatusInternalServerError, "could not load posts")
-		return
-	}
-
 	user := UserFromContext(r)
 	var userID int64
 	if user != nil {
 		userID = user.ID
 	}
+
+	var (
+		posts        []models.Post
+		err          error
+		activeFilter string
+	)
+
+	switch {
+	case r.URL.Query().Has("category"):
+		categoryID, parseErr := strconv.ParseInt(r.URL.Query().Get("category"), 10, 64)
+		if parseErr != nil {
+			utils.RespondError(w, http.StatusBadRequest, "invalid category id")
+			return
+		}
+		posts, err = h.posts.GetByCategory(categoryID)
+		activeFilter = "category:" + r.URL.Query().Get("category")
+
+	case r.URL.Query().Get("filter") == "mine":
+		if user == nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+		posts, err = h.posts.GetByUser(userID)
+		activeFilter = "mine"
+
+	case r.URL.Query().Get("filter") == "liked":
+		if user == nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+		posts, err = h.posts.GetLikedByUser(userID)
+		activeFilter = "liked"
+
+	default:
+		posts, err = h.posts.GetAll()
+	}
+
+	if err != nil {
+		utils.RespondError(w, http.StatusInternalServerError, "could not load posts")
+		return
+	}
+
 	if err := h.attachPostReactions(posts, userID); err != nil {
 		utils.RespondError(w, http.StatusInternalServerError, "could not load reactions")
 		return
 	}
 
+	categories, err := h.categories.GetAll()
+	if err != nil {
+		utils.RespondError(w, http.StatusInternalServerError, "could not load categories")
+		return
+	}
+
 	data := struct {
-		User  any
-		Posts any
+		User         any
+		Posts        any
+		Categories   any
+		ActiveFilter string
 	}{
-		User:  user,
-		Posts: posts,
+		User:         user,
+		Posts:        posts,
+		Categories:   categories,
+		ActiveFilter: activeFilter,
 	}
 
 	if err := h.templates.ExecuteTemplate(w, "index.html", data); err != nil {
