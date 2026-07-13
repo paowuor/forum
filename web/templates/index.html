@@ -15,8 +15,20 @@
   </nav>
   <hr>
   <h1>Posts</h1>
+  <nav>
+    <strong>Filter:</strong>
+    {{if eq .ActiveFilter ""}}[All]{{else}}<a href="/">All</a>{{end}}
+    {{range .Categories}}
+      {{$catFilter := printf "category:%d" .ID}}
+      | {{if eq $.ActiveFilter $catFilter}}[{{.Name}}]{{else}}<a href="/?category={{.ID}}">{{.Name}}</a>{{end}}
+    {{end}}
+    {{if $.User}}
+      | {{if eq .ActiveFilter "mine"}}[My Posts]{{else}}<a href="/?filter=mine">My Posts</a>{{end}}
+      | {{if eq .ActiveFilter "liked"}}[Liked Posts]{{else}}<a href="/?filter=liked">Liked Posts</a>{{end}}
+    {{end}}
+  </nav>
   {{if not .Posts}}
-    <p>No posts yet.</p>
+    <p>No posts match this filter.</p>
   {{end}}
   {{range .Posts}}
     <article>
