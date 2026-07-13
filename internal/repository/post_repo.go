@@ -55,12 +55,43 @@ func (r *PostRepository) Create(userID int64, title, content string, categoryIDs
 // GetAll returns every post, newest first, with the author's username and
 // its categories attached.
 func (r *PostRepository) GetAll() ([]models.Post, error) {
-	rows, err := r.db.Query(`
+	return r.queryPosts("", nil)
+}
+
+// GetByCategory returns every post tagged with the given category, newest first.
+func (r *PostRepository) GetByCategory(categoryID int64) ([]models.Post, error) {
+	return r.queryPosts(
+		`JOIN post_categories pc ON pc.post_id = posts.id WHERE pc.category_id = ?`,
+		[]any{categoryID},
+	)
+}
+
+// GetByUser returns every post created by the given user ("my posts"), newest first.
+func (r *PostRepository) GetByUser(userID int64) ([]models.Post, error) {
+	return r.queryPosts(`WHERE posts.user_id = ?`, []any{userID})
+}
+
+// GetLikedByUser returns every post the given user has liked ("liked posts"), newest first.
+func (r *PostRepository) GetLikedByUser(userID int64) ([]models.Post, error) {
+	return r.queryPosts(
+		`JOIN reactions rx ON rx.target_type = 'post' AND rx.target_id = posts.id
+		 WHERE rx.user_id = ? AND rx.value = 1`,
+		[]any{userID},
+	)
+}
+
+// queryPosts runs the shared post-listing query with an optional extra JOIN/WHERE
+// fragment and its arguments, then attaches categories to the results. Passing
+// an empty extra clause returns every post, same as GetAll.
+func (r *PostRepository) queryPosts(extra string, args []any) ([]models.Post, error) {
+	query := `
 		SELECT posts.id, posts.user_id, posts.title, posts.content, posts.created_at, users.username
 		FROM posts
 		JOIN users ON users.id = posts.user_id
+		` + extra + `
 		ORDER BY posts.created_at DESC
-	`)
+	`
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
