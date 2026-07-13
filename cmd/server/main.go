@@ -31,14 +31,16 @@ func main() {
 	categoryRepo := repository.NewCategoryRepository(db)
 	postRepo := repository.NewPostRepository(db)
 	commentRepo := repository.NewCommentRepository(db)
+	reactionRepo := repository.NewReactionRepository(db)
 
 	if err := categoryRepo.SeedDefaults(); err != nil {
 		log.Fatalf("failed to seed categories: %v", err)
 	}
 
 	authHandler := handlers.NewAuthHandler(userRepo, sessionRepo)
-	postHandler := handlers.NewPostHandler(postRepo, categoryRepo, commentRepo, templates)
+	postHandler := handlers.NewPostHandler(postRepo, categoryRepo, commentRepo, reactionRepo, templates)
 	commentHandler := handlers.NewCommentHandler(commentRepo)
+	reactionHandler := handlers.NewReactionHandler(reactionRepo, commentRepo)
 
 	mux := http.NewServeMux()
 
@@ -47,6 +49,8 @@ func main() {
 	mux.HandleFunc("POST /posts", handlers.RequireAuth(postHandler.Create))
 	mux.HandleFunc("GET /posts/{id}", postHandler.View)
 	mux.HandleFunc("POST /posts/{id}/comments", handlers.RequireAuth(commentHandler.Create))
+	mux.HandleFunc("POST /posts/{id}/react", handlers.RequireAuth(reactionHandler.ReactToPost))
+	mux.HandleFunc("POST /comments/{id}/react", handlers.RequireAuth(reactionHandler.ReactToComment))
 
 	mux.HandleFunc("GET /register", func(w http.ResponseWriter, r *http.Request) {
 		templates.ExecuteTemplate(w, "register.html", nil)
