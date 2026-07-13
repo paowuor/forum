@@ -20,6 +20,26 @@
     <p>{{.Post.Content}}</p>
   </article>
   <hr>
-  <p><em>Comments coming in Phase 4.</em></p>
+  <h2>Comments</h2>
+  {{if not .Comments}}
+    <p>No comments yet.</p>
+  {{end}}
+  {{range .Comments}}
+    <div>
+      <p><strong>{{.Username}}</strong> — {{.CreatedAt.Format "Jan 2, 2006 15:04"}}</p>
+      <p>{{.Content}}</p>
+    </div>
+    <hr>
+  {{end}}
+
+  {{if .User}}
+    <h3>Add a comment</h3>
+    <form method="POST" action="/posts/{{.Post.ID}}/comments">
+      <textarea name="content" rows="3" cols="50" required></textarea><br>
+      <button type="submit">Comment</button>
+    </form>
+  {{else}}
+    <p><a href="/login">Log in</a> to leave a comment.</p>
+  {{end}}
 </body>
 </html>
