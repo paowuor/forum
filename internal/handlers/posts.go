@@ -13,14 +13,15 @@ import (
 type PostHandler struct {
 	posts      *repository.PostRepository
 	categories *repository.CategoryRepository
+	comments   *repository.CommentRepository
 	templates  *template.Template
 }
 
-func NewPostHandler(posts *repository.PostRepository, categories *repository.CategoryRepository, templates *template.Template) *PostHandler {
-	return &PostHandler{posts: posts, categories: categories, templates: templates}
+func NewPostHandler(posts *repository.PostRepository, categories *repository.CategoryRepository, comments *repository.CommentRepository, templates *template.Template) *PostHandler {
+	return &PostHandler{posts: posts, categories: categories, comments: comments, templates: templates}
 }
 
-// List handles GET / - shows every post to everyone, registered or not.
+// List handles GET / — shows every post to everyone, registered or not.
 func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 	posts, err := h.posts.GetAll()
 	if err != nil {
@@ -41,9 +42,9 @@ func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// View handles GET /posts/{id} - shows a single post, visible to everyone.
+// View handles GET /posts/{id} — shows a single post, visible to everyone.
 func (h *PostHandler) View(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt("id", 10, 64)
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		utils.RespondError(w, http.StatusBadRequest, "invalid post id")
 		return
@@ -59,12 +60,20 @@ func (h *PostHandler) View(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	comments, err := h.comments.GetByPostID(id)
+	if err != nil {
+		utils.RespondError(w, http.StatusInternalServerError, "could not load comments")
+		return
+	}
+
 	data := struct {
-		User any
-		Post any
+		User     any
+		Post     any
+		Comments any
 	}{
-		User: UserFromContext(r),
-		Post: post,
+		User:     UserFromContext(r),
+		Post:     post,
+		Comments: comments,
 	}
 
 	if err := h.templates.ExecuteTemplate(w, "post.html", data); err != nil {
@@ -72,7 +81,7 @@ func (h *PostHandler) View(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// NewPostForm handles GET /posts/new - only reachable by logged-in users.
+// NewPostForm handles GET /posts/new — only reachable by logged-in users (see RequireAuth in main.go).
 func (h *PostHandler) NewPostForm(w http.ResponseWriter, r *http.Request) {
 	categories, err := h.categories.GetAll()
 	if err != nil {
@@ -93,11 +102,11 @@ func (h *PostHandler) NewPostForm(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Create handles POST /posts - only reachable by logged-in users.
+// Create handles POST /posts — only reachable by logged-in users (see RequireAuth in main.go).
 func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r)
 	if user == nil {
-		// Shouldn't happen since RequireAuth guards this route, but just in case.
+		// Shouldn't happen since RequireAuth guards this route, but guard anyway.
 		utils.RespondError(w, http.StatusUnauthorized, "you must be logged in to post")
 		return
 	}
