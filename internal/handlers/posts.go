@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"forum/internal/models"
 	"forum/internal/repository"
 	"forum/internal/utils"
 )
@@ -14,11 +15,71 @@ type PostHandler struct {
 	posts      *repository.PostRepository
 	categories *repository.CategoryRepository
 	comments   *repository.CommentRepository
+	reactions  *repository.ReactionRepository
 	templates  *template.Template
 }
 
-func NewPostHandler(posts *repository.PostRepository, categories *repository.CategoryRepository, comments *repository.CommentRepository, templates *template.Template) *PostHandler {
-	return &PostHandler{posts: posts, categories: categories, comments: comments, templates: templates}
+func NewPostHandler(posts *repository.PostRepository, categories *repository.CategoryRepository, comments *repository.CommentRepository, reactions *repository.ReactionRepository, templates *template.Template) *PostHandler {
+	return &PostHandler{posts: posts, categories: categories, comments: comments, reactions: reactions, templates: templates}
+}
+
+// attachPostReactions fills in LikeCount/DislikeCount/UserReaction on each
+// post in place. userID is 0 for guests, meaning UserReaction stays 0.
+func (h *PostHandler) attachPostReactions(posts []models.Post, userID int64) error {
+	ids := make([]int64, len(posts))
+	for i, p := range posts {
+		ids[i] = p.ID
+	}
+
+	countsByID, err := h.reactions.GetCountsBatch(repository.TargetPost, ids)
+	if err != nil {
+		return err
+	}
+
+	var userReactions map[int64]int
+	if userID != 0 {
+		userReactions, err = h.reactions.GetUserReactionsBatch(userID, repository.TargetPost, ids)
+		if err != nil {
+			return err
+		}
+	}
+
+	for i := range posts {
+		c := countsByID[posts[i].ID]
+		posts[i].LikeCount = c.Likes
+		posts[i].DislikeCount = c.Dislikes
+		posts[i].UserReaction = userReactions[posts[i].ID]
+	}
+	return nil
+}
+
+// attachCommentReactions does the same as attachPostReactions, for comments.
+func (h *PostHandler) attachCommentReactions(comments []models.Comment, userID int64) error {
+	ids := make([]int64, len(comments))
+	for i, c := range comments {
+		ids[i] = c.ID
+	}
+
+	countsByID, err := h.reactions.GetCountsBatch(repository.TargetComment, ids)
+	if err != nil {
+		return err
+	}
+
+	var userReactions map[int64]int
+	if userID != 0 {
+		userReactions, err = h.reactions.GetUserReactionsBatch(userID, repository.TargetComment, ids)
+		if err != nil {
+			return err
+		}
+	}
+
+	for i := range comments {
+		c := countsByID[comments[i].ID]
+		comments[i].LikeCount = c.Likes
+		comments[i].DislikeCount = c.Dislikes
+		comments[i].UserReaction = userReactions[comments[i].ID]
+	}
+	return nil
 }
 
 // List handles GET / — shows every post to everyone, registered or not.
@@ -29,11 +90,21 @@ func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user := UserFromContext(r)
+	var userID int64
+	if user != nil {
+		userID = user.ID
+	}
+	if err := h.attachPostReactions(posts, userID); err != nil {
+		utils.RespondError(w, http.StatusInternalServerError, "could not load reactions")
+		return
+	}
+
 	data := struct {
 		User  any
 		Posts any
 	}{
-		User:  UserFromContext(r),
+		User:  user,
 		Posts: posts,
 	}
 
@@ -66,12 +137,29 @@ func (h *PostHandler) View(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user := UserFromContext(r)
+	var userID int64
+	if user != nil {
+		userID = user.ID
+	}
+
+	postSlice := []models.Post{*post}
+	if err := h.attachPostReactions(postSlice, userID); err != nil {
+		utils.RespondError(w, http.StatusInternalServerError, "could not load reactions")
+		return
+	}
+	*post = postSlice[0]
+	if err := h.attachCommentReactions(comments, userID); err != nil {
+		utils.RespondError(w, http.StatusInternalServerError, "could not load reactions")
+		return
+	}
+
 	data := struct {
 		User     any
 		Post     any
 		Comments any
 	}{
-		User:     UserFromContext(r),
+		User:     user,
 		Post:     post,
 		Comments: comments,
 	}
