@@ -59,3 +59,14 @@ func (r *CommentRepository) PostExists(postID int64) (bool, error) {
 	err := r.db.QueryRow(`SELECT EXISTS(SELECT 1 FROM posts WHERE id = ?)`, postID).Scan(&exists)
 	return exists, err
 }
+
+// GetPostID returns the post_id a comment belongs to — used to redirect
+// back to the right post after reacting to a comment.
+func (r *CommentRepository) GetPostID(commentID int64) (int64, error) {
+	var postID int64
+	err := r.db.QueryRow(`SELECT post_id FROM comments WHERE id = ?`, commentID).Scan(&postID)
+	if err == sql.ErrNoRows {
+		return 0, ErrNotFound
+	}
+	return postID, err
+}
