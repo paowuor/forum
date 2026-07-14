@@ -1,0 +1,7 @@
+data/*.db
+data/*.db-journal
+forum-server
+*.exe
+.git
+.gitignore
+*.zip
