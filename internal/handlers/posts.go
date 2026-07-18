@@ -279,6 +279,11 @@ func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 		categoryIDs = append(categoryIDs, id)
 	}
 
+	if len(categoryIDs) == 0 {
+		RespondError(w, http.StatusBadRequest, "select at least one category")
+		return
+	}
+
 	postID, err := h.posts.Create(user.ID, title, content, categoryIDs)
 	if err != nil {
 		RespondError(w, http.StatusInternalServerError, "could not create post")
