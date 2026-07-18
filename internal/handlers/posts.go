@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
@@ -15,11 +14,10 @@ type PostHandler struct {
 	categories *repository.CategoryRepository
 	comments   *repository.CommentRepository
 	reactions  *repository.ReactionRepository
-	templates  *template.Template
 }
 
-func NewPostHandler(posts *repository.PostRepository, categories *repository.CategoryRepository, comments *repository.CommentRepository, reactions *repository.ReactionRepository, templates *template.Template) *PostHandler {
-	return &PostHandler{posts: posts, categories: categories, comments: comments, reactions: reactions, templates: templates}
+func NewPostHandler(posts *repository.PostRepository, categories *repository.CategoryRepository, comments *repository.CommentRepository, reactions *repository.ReactionRepository) *PostHandler {
+	return &PostHandler{posts: posts, categories: categories, comments: comments, reactions: reactions}
 }
 
 // attachPostReactions fills in LikeCount/DislikeCount/UserReaction on each
@@ -157,9 +155,7 @@ func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 		ActiveFilter: activeFilter,
 	}
 
-	if err := h.templates.ExecuteTemplate(w, "index.html", data); err != nil {
-		RespondError(w, http.StatusInternalServerError, "could not render page")
-	}
+	RenderPage(w, "index.html", data)
 }
 
 // View handles GET /posts/{id} — shows a single post, visible to everyone.
@@ -213,9 +209,7 @@ func (h *PostHandler) View(w http.ResponseWriter, r *http.Request) {
 		Comments: comments,
 	}
 
-	if err := h.templates.ExecuteTemplate(w, "post.html", data); err != nil {
-		RespondError(w, http.StatusInternalServerError, "could not render page")
-	}
+	RenderPage(w, "post.html", data)
 }
 
 // NewPostForm handles GET /posts/new — only reachable by logged-in users (see RequireAuth in main.go).
@@ -234,9 +228,7 @@ func (h *PostHandler) NewPostForm(w http.ResponseWriter, r *http.Request) {
 		Categories: categories,
 	}
 
-	if err := h.templates.ExecuteTemplate(w, "create_post.html", data); err != nil {
-		RespondError(w, http.StatusInternalServerError, "could not render page")
-	}
+	RenderPage(w, "create_post.html", data)
 }
 
 // Create handles POST /posts — only reachable by logged-in users (see RequireAuth in main.go).
