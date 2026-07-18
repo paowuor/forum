@@ -1,9 +1,21 @@
 <!DOCTYPE html>
-<html>
-<head><title>Error {{.Status}}</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Error {{.Status}}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
 <body>
-  <h1>Error {{.Status}}</h1>
-  <p>{{.Message}}</p>
-  <p><a href="/">Back to home</a></p>
+<div class="container">
+  <nav class="site-nav">
+    <a class="brand" href="/">Forum</a>
+  </nav>
+  <div class="error-box">
+    <p class="status">{{.Status}}</p>
+    <p class="message">{{.Message}}</p>
+    <a class="btn" href="/">Back to home</a>
+  </div>
+</div>
 </body>
 </html>

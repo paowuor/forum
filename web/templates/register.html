@@ -1,14 +1,31 @@
 <!DOCTYPE html>
-<html>
-<head><title>Register</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Register</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
 <body>
+<div class="container">
+  <nav class="site-nav">
+    <a class="brand" href="/">Forum</a>
+  </nav>
+
   <h1>Register</h1>
-  <form method="POST" action="/register">
-    <label>Email: <input type="email" name="email" required></label><br>
-    <label>Username: <input type="text" name="username" required></label><br>
-    <label>Password: <input type="password" name="password" required></label><br>
+  <form method="POST" action="/register" class="stacked">
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email" required>
+
+    <label for="username">Username</label>
+    <input type="text" id="username" name="username" required minlength="3" maxlength="20">
+
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" required minlength="8">
+
     <button type="submit">Register</button>
   </form>
-  <p>Already have an account? <a href="/login">Log in</a></p>
+  <p class="helper-text">Already have an account? <a href="/login">Log in</a></p>
+</div>
 </body>
 </html>

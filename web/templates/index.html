@@ -1,45 +1,61 @@
 <!DOCTYPE html>
-<html>
-<head><title>Forum</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Forum</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
 <body>
-  <nav>
-    {{if .User}}
-      Logged in as {{.User.Username}} —
-      <form method="POST" action="/logout" style="display:inline">
-        <button type="submit">Logout</button>
-      </form>
-      | <a href="/posts/new">New Post</a>
-    {{else}}
-      <a href="/login">Login</a> | <a href="/register">Register</a>
-    {{end}}
+<div class="container">
+  <nav class="site-nav">
+    <a class="brand" href="/">Forum</a>
+    <div class="nav-links">
+      {{if .User}}
+        <span>Logged in as <strong>{{.User.Username}}</strong></span>
+        <a class="btn" href="/posts/new">New Post</a>
+        <form method="POST" action="/logout">
+          <button type="submit" class="btn-secondary">Logout</button>
+        </form>
+      {{else}}
+        <a href="/login">Login</a>
+        <a href="/register">Register</a>
+      {{end}}
+    </div>
   </nav>
-  <hr>
-  <h1>Posts</h1>
-  <nav>
-    <strong>Filter:</strong>
-    {{if eq .ActiveFilter ""}}[All]{{else}}<a href="/">All</a>{{end}}
+
+  <div class="filter-bar">
+    <span class="filter-label">Filter:</span>
+    {{if eq .ActiveFilter ""}}<span class="filter-active">All</span>{{else}}<a href="/">All</a>{{end}}
     {{range .Categories}}
       {{$catFilter := printf "category:%d" .ID}}
-      | {{if eq $.ActiveFilter $catFilter}}[{{.Name}}]{{else}}<a href="/?category={{.ID}}">{{.Name}}</a>{{end}}
+      {{if eq $.ActiveFilter $catFilter}}<span class="filter-active">{{.Name}}</span>{{else}}<a href="/?category={{.ID}}">{{.Name}}</a>{{end}}
     {{end}}
     {{if $.User}}
-      | {{if eq .ActiveFilter "mine"}}[My Posts]{{else}}<a href="/?filter=mine">My Posts</a>{{end}}
-      | {{if eq .ActiveFilter "liked"}}[Liked Posts]{{else}}<a href="/?filter=liked">Liked Posts</a>{{end}}
+      {{if eq .ActiveFilter "mine"}}<span class="filter-active">My Posts</span>{{else}}<a href="/?filter=mine">My Posts</a>{{end}}
+      {{if eq .ActiveFilter "liked"}}<span class="filter-active">Liked Posts</span>{{else}}<a href="/?filter=liked">Liked Posts</a>{{end}}
     {{end}}
-  </nav>
+  </div>
+
   {{if not .Posts}}
-    <p>No posts match this filter.</p>
+    <p class="empty-state">No posts match this filter.</p>
   {{end}}
+
   {{range .Posts}}
-    <article>
+    <article class="post-card">
       <h2><a href="/posts/{{.ID}}">{{.Title}}</a></h2>
-      <p>by {{.Username}} on {{.CreatedAt.Format "Jan 2, 2006 15:04"}}</p>
-      <p>
-        {{range .Categories}}<span>[{{.Name}}]</span> {{end}}
-      </p>
-      <p>👍 {{.LikeCount}} &nbsp; 👎 {{.DislikeCount}}</p>
+      <p class="post-meta">by {{.Username}} on {{.CreatedAt.Format "Jan 2, 2006 15:04"}}</p>
+      {{if .Categories}}
+        <div class="tags">
+          {{range .Categories}}<span class="tag">{{.Name}}</span>{{end}}
+        </div>
+      {{end}}
+      <div class="reactions">
+        <span class="count">👍 {{.LikeCount}}</span>
+        <span class="count">👎 {{.DislikeCount}}</span>
+      </div>
     </article>
-    <hr>
   {{end}}
+</div>
 </body>
 </html>

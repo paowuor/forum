@@ -1,71 +1,84 @@
 <!DOCTYPE html>
-<html>
-<head><title>{{.Post.Title}}</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Post.Title}}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
 <body>
-  <nav>
-    <a href="/">Home</a> —
-    {{if .User}}
-      Logged in as {{.User.Username}}
-    {{else}}
-      <a href="/login">Login</a> | <a href="/register">Register</a>
-    {{end}}
+<div class="container">
+  <nav class="site-nav">
+    <a class="brand" href="/">Forum</a>
+    <div class="nav-links">
+      {{if .User}}
+        <span>Logged in as <strong>{{.User.Username}}</strong></span>
+      {{else}}
+        <a href="/login">Login</a>
+        <a href="/register">Register</a>
+      {{end}}
+    </div>
   </nav>
-  <hr>
-  <article>
+
+  <article class="post-detail">
     <h1>{{.Post.Title}}</h1>
-    <p>by {{.Post.Username}} on {{.Post.CreatedAt.Format "Jan 2, 2006 15:04"}}</p>
-    <p>
-      {{range .Post.Categories}}<span>[{{.Name}}]</span> {{end}}
-    </p>
-    <p>{{.Post.Content}}</p>
-    <p>
-      👍 {{.Post.LikeCount}} &nbsp; 👎 {{.Post.DislikeCount}}
+    <p class="post-meta">by {{.Post.Username}} on {{.Post.CreatedAt.Format "Jan 2, 2006 15:04"}}</p>
+    {{if .Post.Categories}}
+      <div class="tags">
+        {{range .Post.Categories}}<span class="tag">{{.Name}}</span>{{end}}
+      </div>
+    {{end}}
+    <p class="post-body">{{.Post.Content}}</p>
+    <div class="reactions">
+      <span class="count">👍 {{.Post.LikeCount}}</span>
+      <span class="count">👎 {{.Post.DislikeCount}}</span>
       {{if $.User}}
-        <form method="POST" action="/posts/{{.Post.ID}}/react" style="display:inline">
+        <form method="POST" action="/posts/{{.Post.ID}}/react">
           <input type="hidden" name="value" value="1">
-          <button type="submit">{{if eq .Post.UserReaction 1}}Liked ✓{{else}}Like{{end}}</button>
+          <button type="submit" class="react-btn{{if eq .Post.UserReaction 1}} active{{end}}">Like</button>
         </form>
-        <form method="POST" action="/posts/{{.Post.ID}}/react" style="display:inline">
+        <form method="POST" action="/posts/{{.Post.ID}}/react">
           <input type="hidden" name="value" value="-1">
-          <button type="submit">{{if eq .Post.UserReaction -1}}Disliked ✓{{else}}Dislike{{end}}</button>
+          <button type="submit" class="react-btn{{if eq .Post.UserReaction -1}} active{{end}}">Dislike</button>
         </form>
       {{end}}
-    </p>
+    </div>
   </article>
-  <hr>
+
   <h2>Comments</h2>
   {{if not .Comments}}
-    <p>No comments yet.</p>
+    <p class="empty-state">No comments yet.</p>
   {{end}}
   {{range .Comments}}
-    <div>
-      <p><strong>{{.Username}}</strong> — {{.CreatedAt.Format "Jan 2, 2006 15:04"}}</p>
+    <div class="comment-card">
+      <p class="post-meta"><span class="comment-author">{{.Username}}</span> — {{.CreatedAt.Format "Jan 2, 2006 15:04"}}</p>
       <p>{{.Content}}</p>
-      <p>
-        👍 {{.LikeCount}} &nbsp; 👎 {{.DislikeCount}}
+      <div class="reactions">
+        <span class="count">👍 {{.LikeCount}}</span>
+        <span class="count">👎 {{.DislikeCount}}</span>
         {{if $.User}}
-          <form method="POST" action="/comments/{{.ID}}/react" style="display:inline">
+          <form method="POST" action="/comments/{{.ID}}/react">
             <input type="hidden" name="value" value="1">
-            <button type="submit">{{if eq .UserReaction 1}}Liked ✓{{else}}Like{{end}}</button>
+            <button type="submit" class="react-btn{{if eq .UserReaction 1}} active{{end}}">Like</button>
           </form>
-          <form method="POST" action="/comments/{{.ID}}/react" style="display:inline">
+          <form method="POST" action="/comments/{{.ID}}/react">
             <input type="hidden" name="value" value="-1">
-            <button type="submit">{{if eq .UserReaction -1}}Disliked ✓{{else}}Dislike{{end}}</button>
+            <button type="submit" class="react-btn{{if eq .UserReaction -1}} active{{end}}">Dislike</button>
           </form>
         {{end}}
-      </p>
+      </div>
     </div>
-    <hr>
   {{end}}
 
   {{if .User}}
     <h3>Add a comment</h3>
-    <form method="POST" action="/posts/{{.Post.ID}}/comments">
-      <textarea name="content" rows="3" cols="50" required></textarea><br>
+    <form method="POST" action="/posts/{{.Post.ID}}/comments" class="stacked">
+      <textarea name="content" rows="3" required placeholder="Write a comment..."></textarea>
       <button type="submit">Comment</button>
     </form>
   {{else}}
-    <p><a href="/login">Log in</a> to leave a comment.</p>
+    <p class="helper-text"><a href="/login">Log in</a> to leave a comment.</p>
   {{end}}
+</div>
 </body>
 </html>
