@@ -66,6 +66,12 @@ func main() {
 
 	mux.HandleFunc("POST /logout", authHandler.Logout)
 
+	// Static assets (CSS/JS). "GET /static/" is a subtree pattern, more
+	// specific than the bare "/" catch-all below, so it always wins for
+	// paths under /static/ regardless of registration order.
+	staticFiles := http.FileServer(http.Dir("web/static"))
+	mux.Handle("GET /static/", http.StripPrefix("/static/", staticFiles))
+
 	// Catch-all: "/" is a subtree pattern in Go's ServeMux, so it only fires
 	// when nothing more specific above matched — i.e. genuinely unknown
 	// routes. More specific patterns (like "GET /{$}" for the homepage)
