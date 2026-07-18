@@ -8,7 +8,6 @@ import (
 
 	"forum/internal/models"
 	"forum/internal/repository"
-	"forum/internal/utils"
 )
 
 type PostHandler struct {
@@ -104,7 +103,7 @@ func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 	case r.URL.Query().Has("category"):
 		categoryID, parseErr := strconv.ParseInt(r.URL.Query().Get("category"), 10, 64)
 		if parseErr != nil {
-			utils.RespondError(w, http.StatusBadRequest, "invalid category id")
+			RespondError(w, http.StatusBadRequest, "invalid category id")
 			return
 		}
 		posts, err = h.posts.GetByCategory(categoryID)
@@ -131,18 +130,18 @@ func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		utils.RespondError(w, http.StatusInternalServerError, "could not load posts")
+		RespondError(w, http.StatusInternalServerError, "could not load posts")
 		return
 	}
 
 	if err := h.attachPostReactions(posts, userID); err != nil {
-		utils.RespondError(w, http.StatusInternalServerError, "could not load reactions")
+		RespondError(w, http.StatusInternalServerError, "could not load reactions")
 		return
 	}
 
 	categories, err := h.categories.GetAll()
 	if err != nil {
-		utils.RespondError(w, http.StatusInternalServerError, "could not load categories")
+		RespondError(w, http.StatusInternalServerError, "could not load categories")
 		return
 	}
 
@@ -159,7 +158,7 @@ func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.templates.ExecuteTemplate(w, "index.html", data); err != nil {
-		utils.RespondError(w, http.StatusInternalServerError, "could not render page")
+		RespondError(w, http.StatusInternalServerError, "could not render page")
 	}
 }
 
@@ -167,23 +166,23 @@ func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 func (h *PostHandler) View(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		utils.RespondError(w, http.StatusBadRequest, "invalid post id")
+		RespondError(w, http.StatusBadRequest, "invalid post id")
 		return
 	}
 
 	post, err := h.posts.GetByID(id)
 	if err == repository.ErrNotFound {
-		utils.RespondError(w, http.StatusNotFound, "post not found")
+		RespondError(w, http.StatusNotFound, "post not found")
 		return
 	}
 	if err != nil {
-		utils.RespondError(w, http.StatusInternalServerError, "could not load post")
+		RespondError(w, http.StatusInternalServerError, "could not load post")
 		return
 	}
 
 	comments, err := h.comments.GetByPostID(id)
 	if err != nil {
-		utils.RespondError(w, http.StatusInternalServerError, "could not load comments")
+		RespondError(w, http.StatusInternalServerError, "could not load comments")
 		return
 	}
 
@@ -195,12 +194,12 @@ func (h *PostHandler) View(w http.ResponseWriter, r *http.Request) {
 
 	postSlice := []models.Post{*post}
 	if err := h.attachPostReactions(postSlice, userID); err != nil {
-		utils.RespondError(w, http.StatusInternalServerError, "could not load reactions")
+		RespondError(w, http.StatusInternalServerError, "could not load reactions")
 		return
 	}
 	*post = postSlice[0]
 	if err := h.attachCommentReactions(comments, userID); err != nil {
-		utils.RespondError(w, http.StatusInternalServerError, "could not load reactions")
+		RespondError(w, http.StatusInternalServerError, "could not load reactions")
 		return
 	}
 
@@ -215,7 +214,7 @@ func (h *PostHandler) View(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.templates.ExecuteTemplate(w, "post.html", data); err != nil {
-		utils.RespondError(w, http.StatusInternalServerError, "could not render page")
+		RespondError(w, http.StatusInternalServerError, "could not render page")
 	}
 }
 
@@ -223,7 +222,7 @@ func (h *PostHandler) View(w http.ResponseWriter, r *http.Request) {
 func (h *PostHandler) NewPostForm(w http.ResponseWriter, r *http.Request) {
 	categories, err := h.categories.GetAll()
 	if err != nil {
-		utils.RespondError(w, http.StatusInternalServerError, "could not load categories")
+		RespondError(w, http.StatusInternalServerError, "could not load categories")
 		return
 	}
 
@@ -236,7 +235,7 @@ func (h *PostHandler) NewPostForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.templates.ExecuteTemplate(w, "create_post.html", data); err != nil {
-		utils.RespondError(w, http.StatusInternalServerError, "could not render page")
+		RespondError(w, http.StatusInternalServerError, "could not render page")
 	}
 }
 
@@ -245,12 +244,12 @@ func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r)
 	if user == nil {
 		// Shouldn't happen since RequireAuth guards this route, but guard anyway.
-		utils.RespondError(w, http.StatusUnauthorized, "you must be logged in to post")
+		RespondError(w, http.StatusUnauthorized, "you must be logged in to post")
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
-		utils.RespondError(w, http.StatusBadRequest, "invalid form data")
+		RespondError(w, http.StatusBadRequest, "invalid form data")
 		return
 	}
 
@@ -258,23 +257,31 @@ func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 	content := strings.TrimSpace(r.FormValue("content"))
 
 	if title == "" || content == "" {
-		utils.RespondError(w, http.StatusBadRequest, "title and content are required")
+		RespondError(w, http.StatusBadRequest, "title and content are required")
 		return
 	}
 
 	var categoryIDs []int64
+	seen := make(map[int64]bool)
 	for _, raw := range r.Form["categories"] {
 		id, err := strconv.ParseInt(raw, 10, 64)
 		if err != nil {
-			utils.RespondError(w, http.StatusBadRequest, "invalid category")
+			RespondError(w, http.StatusBadRequest, "invalid category")
 			return
 		}
+		// A crafted request could repeat the same category ID; post_categories
+		// has (post_id, category_id) as its primary key, so inserting a
+		// duplicate would otherwise fail the whole transaction with a 500.
+		if seen[id] {
+			continue
+		}
+		seen[id] = true
 		categoryIDs = append(categoryIDs, id)
 	}
 
 	postID, err := h.posts.Create(user.ID, title, content, categoryIDs)
 	if err != nil {
-		utils.RespondError(w, http.StatusInternalServerError, "could not create post")
+		RespondError(w, http.StatusInternalServerError, "could not create post")
 		return
 	}
 

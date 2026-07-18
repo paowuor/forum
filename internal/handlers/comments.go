@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"forum/internal/repository"
-	"forum/internal/utils"
 )
 
 type CommentHandler struct {
@@ -22,39 +21,39 @@ func NewCommentHandler(comments *repository.CommentRepository) *CommentHandler {
 func (h *CommentHandler) Create(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r)
 	if user == nil {
-		utils.RespondError(w, http.StatusUnauthorized, "you must be logged in to comment")
+		RespondError(w, http.StatusUnauthorized, "you must be logged in to comment")
 		return
 	}
 
 	postID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		utils.RespondError(w, http.StatusBadRequest, "invalid post id")
+		RespondError(w, http.StatusBadRequest, "invalid post id")
 		return
 	}
 
 	exists, err := h.comments.PostExists(postID)
 	if err != nil {
-		utils.RespondError(w, http.StatusInternalServerError, "internal server error")
+		RespondError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 	if !exists {
-		utils.RespondError(w, http.StatusNotFound, "post not found")
+		RespondError(w, http.StatusNotFound, "post not found")
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
-		utils.RespondError(w, http.StatusBadRequest, "invalid form data")
+		RespondError(w, http.StatusBadRequest, "invalid form data")
 		return
 	}
 
 	content := strings.TrimSpace(r.FormValue("content"))
 	if content == "" {
-		utils.RespondError(w, http.StatusBadRequest, "comment cannot be empty")
+		RespondError(w, http.StatusBadRequest, "comment cannot be empty")
 		return
 	}
 
 	if _, err := h.comments.Create(postID, user.ID, content); err != nil {
-		utils.RespondError(w, http.StatusInternalServerError, "could not create comment")
+		RespondError(w, http.StatusInternalServerError, "could not create comment")
 		return
 	}
 

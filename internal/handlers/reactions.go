@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"forum/internal/repository"
-	"forum/internal/utils"
 )
 
 var errInvalidReactionValue = errors.New("value must be 1 or -1")
@@ -36,39 +35,39 @@ func parseReactionValue(r *http.Request) (int, error) {
 func (h *ReactionHandler) ReactToPost(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r)
 	if user == nil {
-		utils.RespondError(w, http.StatusUnauthorized, "you must be logged in to react")
+		RespondError(w, http.StatusUnauthorized, "you must be logged in to react")
 		return
 	}
 
 	postID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		utils.RespondError(w, http.StatusBadRequest, "invalid post id")
+		RespondError(w, http.StatusBadRequest, "invalid post id")
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
-		utils.RespondError(w, http.StatusBadRequest, "invalid form data")
+		RespondError(w, http.StatusBadRequest, "invalid form data")
 		return
 	}
 
 	value, err := parseReactionValue(r)
 	if err != nil {
-		utils.RespondError(w, http.StatusBadRequest, "value must be 1 (like) or -1 (dislike)")
+		RespondError(w, http.StatusBadRequest, "value must be 1 (like) or -1 (dislike)")
 		return
 	}
 
 	exists, err := h.reactions.TargetExists(repository.TargetPost, postID)
 	if err != nil {
-		utils.RespondError(w, http.StatusInternalServerError, "internal server error")
+		RespondError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 	if !exists {
-		utils.RespondError(w, http.StatusNotFound, "post not found")
+		RespondError(w, http.StatusNotFound, "post not found")
 		return
 	}
 
 	if err := h.reactions.SetReaction(user.ID, repository.TargetPost, postID, value); err != nil {
-		utils.RespondError(w, http.StatusInternalServerError, "could not save reaction")
+		RespondError(w, http.StatusInternalServerError, "could not save reaction")
 		return
 	}
 
@@ -80,39 +79,39 @@ func (h *ReactionHandler) ReactToPost(w http.ResponseWriter, r *http.Request) {
 func (h *ReactionHandler) ReactToComment(w http.ResponseWriter, r *http.Request) {
 	user := UserFromContext(r)
 	if user == nil {
-		utils.RespondError(w, http.StatusUnauthorized, "you must be logged in to react")
+		RespondError(w, http.StatusUnauthorized, "you must be logged in to react")
 		return
 	}
 
 	commentID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		utils.RespondError(w, http.StatusBadRequest, "invalid comment id")
+		RespondError(w, http.StatusBadRequest, "invalid comment id")
 		return
 	}
 
 	if err := r.ParseForm(); err != nil {
-		utils.RespondError(w, http.StatusBadRequest, "invalid form data")
+		RespondError(w, http.StatusBadRequest, "invalid form data")
 		return
 	}
 
 	value, err := parseReactionValue(r)
 	if err != nil {
-		utils.RespondError(w, http.StatusBadRequest, "value must be 1 (like) or -1 (dislike)")
+		RespondError(w, http.StatusBadRequest, "value must be 1 (like) or -1 (dislike)")
 		return
 	}
 
 	postID, err := h.comments.GetPostID(commentID)
 	if err == repository.ErrNotFound {
-		utils.RespondError(w, http.StatusNotFound, "comment not found")
+		RespondError(w, http.StatusNotFound, "comment not found")
 		return
 	}
 	if err != nil {
-		utils.RespondError(w, http.StatusInternalServerError, "internal server error")
+		RespondError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	if err := h.reactions.SetReaction(user.ID, repository.TargetComment, commentID, value); err != nil {
-		utils.RespondError(w, http.StatusInternalServerError, "could not save reaction")
+		RespondError(w, http.StatusInternalServerError, "could not save reaction")
 		return
 	}
 
