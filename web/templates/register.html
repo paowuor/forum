@@ -1,17 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Register</title>
-  <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-<div class="container">
-  <nav class="site-nav">
-    <a class="brand" href="/">Forum</a>
-  </nav>
-
+{{define "content"}}
   <h1>Register</h1>
   <form method="POST" action="/register" class="stacked">
     <label for="email">Email</label>
@@ -26,6 +13,4 @@
     <button type="submit">Register</button>
   </form>
   <p class="helper-text">Already have an account? <a href="/login">Log in</a></p>
-</div>
-</body>
-</html>
+{{end}}

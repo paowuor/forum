@@ -1,20 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>New Post</title>
-  <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-<div class="container">
-  <nav class="site-nav">
-    <a class="brand" href="/">Forum</a>
-    <div class="nav-links">
-      <span>Logged in as <strong>{{.User.Username}}</strong></span>
-    </div>
-  </nav>
-
+{{define "content"}}
   <h1>New Post</h1>
   <form method="POST" action="/posts" class="stacked">
     <label for="title">Title</label>
@@ -34,6 +18,4 @@
 
     <button type="submit">Post</button>
   </form>
-</div>
-</body>
-</html>
+{{end}}

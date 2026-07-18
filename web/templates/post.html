@@ -1,25 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{.Post.Title}}</title>
-  <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-<div class="container">
-  <nav class="site-nav">
-    <a class="brand" href="/">Forum</a>
-    <div class="nav-links">
-      {{if .User}}
-        <span>Logged in as <strong>{{.User.Username}}</strong></span>
-      {{else}}
-        <a href="/login">Login</a>
-        <a href="/register">Register</a>
-      {{end}}
-    </div>
-  </nav>
-
+{{define "content"}}
   <article class="post-detail">
     <h1>{{.Post.Title}}</h1>
     <p class="post-meta">by {{.Post.Username}} on {{.Post.CreatedAt.Format "Jan 2, 2006 15:04"}}</p>
@@ -79,6 +58,4 @@
   {{else}}
     <p class="helper-text"><a href="/login">Log in</a> to leave a comment.</p>
   {{end}}
-</div>
-</body>
-</html>
+{{end}}

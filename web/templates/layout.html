@@ -1,0 +1,33 @@
+{{define "layout"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Forum</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="container">
+  <nav class="site-nav">
+    <a class="brand" href="/">Forum</a>
+    <div class="nav-links">
+      {{if .User}}
+        <span>Logged in as <strong>{{.User.Username}}</strong></span>
+        <a class="btn" href="/posts/new">New Post</a>
+        <form method="POST" action="/logout">
+          <button type="submit" class="btn-secondary">Logout</button>
+        </form>
+      {{else}}
+        <a href="/login">Login</a>
+        <a href="/register">Register</a>
+      {{end}}
+    </div>
+  </nav>
+
+  {{template "content" .}}
+</div>
+<script src="/static/js/script.js"></script>
+</body>
+</html>
+{{end}}
