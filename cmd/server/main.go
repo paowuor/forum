@@ -1,7 +1,6 @@
 package main
 
 import (
-	"html/template"
 	"log"
 	"net/http"
 
@@ -15,8 +14,6 @@ const (
 	addr   = ":8080"
 )
 
-var templates = template.Must(template.ParseGlob("web/templates/*.html"))
-
 func main() {
 	db, err := database.Open(dbPath)
 	if err != nil {
@@ -26,7 +23,9 @@ func main() {
 
 	log.Println("database ready at", dbPath)
 
-	handlers.SetTemplates(templates)
+	if err := handlers.LoadTemplates("web/templates"); err != nil {
+		log.Fatalf("failed to load templates: %v", err)
+	}
 
 	userRepo := repository.NewUserRepository(db)
 	sessionRepo := repository.NewSessionRepository(db)
@@ -40,7 +39,7 @@ func main() {
 	}
 
 	authHandler := handlers.NewAuthHandler(userRepo, sessionRepo)
-	postHandler := handlers.NewPostHandler(postRepo, categoryRepo, commentRepo, reactionRepo, templates)
+	postHandler := handlers.NewPostHandler(postRepo, categoryRepo, commentRepo, reactionRepo)
 	commentHandler := handlers.NewCommentHandler(commentRepo)
 	reactionHandler := handlers.NewReactionHandler(reactionRepo, commentRepo)
 
@@ -54,13 +53,17 @@ func main() {
 	mux.HandleFunc("POST /posts/{id}/react", handlers.RequireAuth(reactionHandler.ReactToPost))
 	mux.HandleFunc("POST /comments/{id}/react", handlers.RequireAuth(reactionHandler.ReactToComment))
 
+	// Login/register pages render through the same shared layout as every
+	// other page, so they need a data value with a User field too (even
+	// though it'll always be nil for a guest-only page like this) —
+	// otherwise the layout's {{if .User}} check has nothing to evaluate.
 	mux.HandleFunc("GET /register", func(w http.ResponseWriter, r *http.Request) {
-		templates.ExecuteTemplate(w, "register.html", nil)
+		handlers.RenderPage(w, "register.html", struct{ User any }{User: handlers.UserFromContext(r)})
 	})
 	mux.HandleFunc("POST /register", authHandler.Register)
 
 	mux.HandleFunc("GET /login", func(w http.ResponseWriter, r *http.Request) {
-		templates.ExecuteTemplate(w, "login.html", nil)
+		handlers.RenderPage(w, "login.html", struct{ User any }{User: handlers.UserFromContext(r)})
 	})
 	mux.HandleFunc("POST /login", authHandler.Login)
 
