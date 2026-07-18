@@ -12,7 +12,7 @@ import (
 
 // migrationFiles embeds every .sql file in the migrations directory into the
 // compiled binary, so the app doesn't depend on the filesystem layout at
-// runtime.
+// runtime (important once this runs inside a Docker container).
 //
 //go:embed migrations/*.sql
 var migrationFiles embed.FS
@@ -20,16 +20,26 @@ var migrationFiles embed.FS
 // Open creates (or opens, if it already exists) the SQLite database at the
 // given path, enables foreign key enforcement, and applies all migrations.
 func Open(dbPath string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", dbPath+"?_foreign_keys=on")
+	// _busy_timeout tells SQLite to retry for up to 5s instead of failing
+	// immediately when another connection holds the write lock.
+	db, err := sql.Open("sqlite3", dbPath+"?_foreign_keys=on&_busy_timeout=5000")
 	if err != nil {
 		return nil, fmt.Errorf("opening database: %w", err)
 	}
+
+	// SQLite allows only one writer at a time. Rather than juggling that
+	// across a pool of connections (and hitting "database is locked" under
+	// concurrent requests even with a busy_timeout), we serialize all
+	// access through a single connection. For a forum-scale app this is
+	// not a real bottleneck, and it removes an entire class of concurrency
+	// bugs outright.
+	db.SetMaxOpenConns(1)
 
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("connecting to database: %w", err)
 	}
 
-    if err := runMigrations(db); err != nil {
+	if err := runMigrations(db); err != nil {
 		return nil, fmt.Errorf("running migrations: %w", err)
 	}
 
