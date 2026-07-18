@@ -38,7 +38,7 @@ func (r *CategoryRepository) GetAll() ([]models.Category, error) {
 // able to create their own categories in this implementation.
 func (r *CategoryRepository) SeedDefaults() error {
 	var count int
-	err := r.db.QueryRow(`SELECT COUNT(*) FROM categories`).Scan(&count); err != nil {
+	if err := r.db.QueryRow(`SELECT COUNT(*) FROM categories`).Scan(&count); err != nil {
 		return err
 	}
 	if count > 0 {
