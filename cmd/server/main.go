@@ -26,6 +26,8 @@ func main() {
 
 	log.Println("database ready at", dbPath)
 
+	handlers.SetTemplates(templates)
+
 	userRepo := repository.NewUserRepository(db)
 	sessionRepo := repository.NewSessionRepository(db)
 	categoryRepo := repository.NewCategoryRepository(db)
@@ -44,7 +46,7 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /", postHandler.List)
+	mux.HandleFunc("GET /{$}", postHandler.List)
 	mux.HandleFunc("GET /posts/new", handlers.RequireAuth(postHandler.NewPostForm))
 	mux.HandleFunc("POST /posts", handlers.RequireAuth(postHandler.Create))
 	mux.HandleFunc("GET /posts/{id}", postHandler.View)
@@ -64,12 +66,23 @@ func main() {
 
 	mux.HandleFunc("POST /logout", authHandler.Logout)
 
+	// Catch-all: "/" is a subtree pattern in Go's ServeMux, so it only fires
+	// when nothing more specific above matched — i.e. genuinely unknown
+	// routes. More specific patterns (like "GET /{$}" for the homepage)
+	// always take priority over this one, regardless of registration order.
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		handlers.RespondError(w, http.StatusNotFound, "page not found")
+	})
+
 	// WithUser wraps the whole mux so every route can check
 	// handlers.UserFromContext(r) to see who (if anyone) is logged in.
+	// Recover wraps that in turn so a panic anywhere below returns a clean
+	// 500 instead of dropping the connection.
 	withAuth := handlers.WithUser(sessionRepo, userRepo)(mux)
+	withRecover := handlers.Recover(withAuth)
 
 	log.Println("listening on", addr)
-	if err := http.ListenAndServe(addr, withAuth); err != nil {
+	if err := http.ListenAndServe(addr, withRecover); err != nil {
 		log.Fatalf("server failed: %v", err)
 	}
 }
